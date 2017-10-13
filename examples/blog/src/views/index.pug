@@ -1,0 +1,10 @@
+h1 Articles
+
+each article in articles
+    hr
+    h3= article.title
+    p= article.content
+    
+    ul
+        each article_comment in article.comments
+            li= article_comment.comment
