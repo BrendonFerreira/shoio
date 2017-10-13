@@ -42,12 +42,14 @@ module.exports = ({
         comments
       }
     }
-
+    
+    // Make this work
     this.commentArticle = async ({ params, body }) => {
       const comment = await this.$models.comment.create( body )
       
     }
 
+    // Make this work
     this.getCommentsFromArticleId = async ({ params }) => {
       const found = await this.model.findOne({ _id: params.id })
       return this.$models.comment.find( { _id: { $in: found.comments } } ).exec()
