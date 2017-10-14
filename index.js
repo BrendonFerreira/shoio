@@ -24,10 +24,6 @@ const createRoute = (name, path) => ({
 	}]
 })
 
-const isArrowFunction = (fn) => {
-	console.log( fn.toString() )
-	return fn.toString().indexOf('=>') > 0
-}
 module.exports = () => {
 
 	const express = require('express')
@@ -90,7 +86,11 @@ module.exports = () => {
 							}
 							response.end()
 						} else {
-							next()
+							if( !response.headersSent ) {
+								next()
+							} else {
+								// console.log('Headers already sent')
+							}
 						}
 					}
 

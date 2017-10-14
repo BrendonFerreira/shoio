@@ -1,11 +1,11 @@
 module.exports = ({
-    name: 'hello_world',
+    name: 'welcome',
     model: {},
     renderer: 'pug',
     controller() {
 
         this.index = () => {
-            this.render('hello_world')
+            this.render('welcome')
         }
 
         return this
