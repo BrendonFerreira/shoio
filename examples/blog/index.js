@@ -1,14 +1,16 @@
-
-const App = require('../../index.js')()
-
+const shoio = require('../../index.js')
+const app = shoio()
 const fs = require('fs')
 
-App.configure( require('./src/config/app') )
+app.configure( require('./src/config/app') )
+app.routes.register( require('./src/config/routes') )
+app.modules.register( fs.readdirSync( './src/modules' ).map( src => `./src/modules/${src}` ).map( require ) )
+app.up( (port) => {
+  console.log( 'Server listening for requests in port', port )
+} )
 
-App.routes.register( require('./src/config/routes') )
-
-for( let fileName of fs.readdirSync( './src/modules' ) ) {
-  App.modules.register( require( './src/modules/' + fileName ) )
-}
-
-App.up()
+// Better debugging
+// process.on('unhandledRejection', err => {
+//   console.log("Caught unhandledRejection");
+//   console.log(err);
+// });

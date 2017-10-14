@@ -24,8 +24,10 @@ const createRoute = (name, path) => ({
 	}]
 })
 
-const isArrowFunction = ( fn ) => fn.toString().indexOf( '=>' ) > 0
-
+const isArrowFunction = (fn) => {
+	console.log( fn.toString() )
+	return fn.toString().indexOf('=>') > 0
+}
 module.exports = () => {
 
 	const express = require('express')
@@ -33,10 +35,13 @@ module.exports = () => {
 	const bodyParser = require('body-parser')
 	const morgan = require('morgan')
 	const path = require('path')
+	const fs = require('fs')
 
 	const App = {
 		config: {
-			viewsPath : 'views'
+			defaultPort: 3001,
+			defaultRenderer: 'pug',
+			viewsPath: 'views',
 		},
 		queue: [],
 		$models: {},
@@ -45,60 +50,58 @@ module.exports = () => {
 			return this.config.adapter[name || 'sqlite']
 		},
 
-		async listen( port = 3000, callback ) {
+		async listen(port = 3000, callback) {
 
 			await bluebird.all(App.queue)
 
 			let server = express()
 
-			server.set('view engine', 'pug') // Pug está estatico por enquanto
-			server.set('views', App.config.viewsPath )
+			server.set('view engine', App.config.defaultRenderer) // Pug está estatico por enquanto
+			server.set('views', App.config.viewsPath)
 			server.use(morgan('dev'))
 			server.use(bodyParser.json())
 
 			for (let route of this.routes.list) {
 
-				const registerRoute = ( app, method, path, moduleName, controllerActionName ) => {
+				const registerRoute = (app, method, path, moduleName, controllerActionName) => {
 
-					const _module = this.modules.getModule( moduleName )
-				
+					const _module = this.modules.getModule(moduleName)
+
 					const handler = async (request, response, next) => {
-						
+
 						_module.scope.$models = this.$models
 
 						_module.scope.render = (page, data) => {
 							response.render(page, data)
 							response.end()
 						}
+
+						const method = _module.controller.call(_module.scope)[controllerActionName]
 						
-						const method = _module.controller.call(_module.scope)[ controllerActionName ]
+						// method.bind(_module.scope)
+						
+						const methodReturn = method(request, response)
 
-						if ( !isArrowFunction( method ) ) {
-							method.bind( _module.scope )
-						}
-
-						const methodReturn = method( request, response )
-
-						if( methodReturn ) {
-                            if (methodReturn instanceof Promise) {
-                                response.json( await methodReturn )
-                            } else {
-                                response.json( methodReturn )
+						if (methodReturn) {
+							if (methodReturn instanceof Promise) {
+								response.json(await methodReturn)
+							} else {
+								response.json(methodReturn)
 							}
 							response.end()
-                        } else {
+						} else {
 							next()
 						}
 					}
 
-					server[ method ](path, handler)
+					server[method](path, handler)
 				}
 
 				if (route.modules) {
 					for (let child of route.modules) {
 						const path = '/' + route.path + child.path;
 						try {
-							registerRoute( server, child.method, path, route.name, child.action )
+							registerRoute(server, child.method, path, route.name, child.action)
 						} catch (error) {
 							console.error('Route registering', error)
 						}
@@ -107,16 +110,23 @@ module.exports = () => {
 
 					const path = '/' + route.path;
 					try {
-						registerRoute( server, route.method, path, route.name, route.action )
+						registerRoute(server, route.method, path, route.name, route.action)
 					} catch (error) {
 						console.error('Route registering', error)
 					}
 				}
 			}
-			server.listen( port )
-			
+
+			if( port instanceof Number ) {
+				server.listen(port)
+			} else {
+				server.listen( App.config.defaultPort, () => port(App.config.defaultPort) )
+			}
+
 		}
 	}
+
+	
 
 	App.start = App.listen
 	App.up = App.listen
@@ -184,23 +194,35 @@ module.exports = () => {
 		},
 
 		register(config) {
-			const asyncRegister = async function () {
+			
+			const asyncRegister = async function (cf) {
 
-				const model = await App.createModel(config)
-
+				const model = 
+					( Object.keys( cf.model ).length > 0 ) 
+						? await App.createModel(cf)
+						: {}
+			
+				
 				const _module = {
-					...config,
-					model
+					...cf,
+					model	
 				}
+				
 
 				_module.scope = _module
-				_module.controller = config.controller
+				_module.controller = cf.controller
 
 				this.list.push(_module)
 
 			}.bind(this)
 
-			App.queue.push(asyncRegister(config))
+			if( config instanceof Array ){
+				for( childConfig of config ){
+					App.queue.push(asyncRegister(childConfig))
+				}
+			} else {
+				App.queue.push(asyncRegister(config))
+			}
 		}
 	}
 

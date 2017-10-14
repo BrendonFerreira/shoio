@@ -16,5 +16,10 @@ module.exports = [
         path: '/',
         method: 'get',
         action: 'article#index'
+    },
+    {
+        path: '*',
+        method: 'all',
+        action: 'errors#pageNotFound'
     }
 ]

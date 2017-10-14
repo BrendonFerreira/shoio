@@ -22,7 +22,7 @@ module.exports = ({
         article.comments = comments
       }
 
-      this.render('articles', {
+      this.render('index', {
         articles : articles
       })
     }
