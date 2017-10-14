@@ -5,7 +5,12 @@ module.exports = [
         action: 'welcome#index'
     },
     {
-        path: '*',
+        path: '/teste',
+        method: 'get',
+        action: 'welcome#teste'
+    },
+    {
+        path: '/*',
         method: 'all',
         action: 'errors#pageNotFound'
     }

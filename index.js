@@ -35,6 +35,7 @@ module.exports = () => {
 
 	const App = {
 		config: {
+			debugRouteSpawn: true,
 			defaultPort: 3001,
 			defaultRenderer: 'pug',
 			viewsPath: 'views',
@@ -59,7 +60,10 @@ module.exports = () => {
 
 			for (let route of this.routes.list) {
 
-				const registerRoute = (app, method, path, moduleName, controllerActionName) => {
+				const registerRoute = (app, method, _path, moduleName, controllerActionName) => {
+
+					if( App.config.debugRouteSpawn ) 
+						console.log( 'Spawning route:',  moduleName+'#'+controllerActionName, method.toUpperCase(), _path )
 
 					const _module = this.modules.getModule(moduleName)
 
@@ -87,30 +91,38 @@ module.exports = () => {
 							response.end()
 						} else {
 							if( !response.headersSent ) {
+								console.log( '\nWarning: \nYour controller action', controllerActionName ,'of', moduleName, 'module, are returning null for the view \nMust be returned Promises, JSON object or String\nWith that, the request will be passed to next middlewhere\n' );
 								next()
 							} else {
-								// console.log('Headers already sent')
+								console.log('Headers already sent')
 							}
 						}
 					}
 
-					server[method](path, handler)
+					// console.log( _module )
+
+					server[method](_path, handler)
 				}
 
 				if (route.modules) {
 					for (let child of route.modules) {
-						const path = '/' + route.path + child.path;
+						const _path = '/' + route.path + child.path;
 						try {
-							registerRoute(server, child.method, path, route.name, child.action)
+							registerRoute(server, child.method, _path, route.name, child.action)
 						} catch (error) {
 							console.error('Route registering', error)
 						}
 					}
 				} else {
+					let _path = '/'
+					if( route.path.charAt(0) == '/' ) {
+						_path = route.path
+					} else {
+						_path = '/' + route.path;
+					}
 
-					const path = '/' + route.path;
 					try {
-						registerRoute(server, route.method, path, route.name, route.action)
+						registerRoute(server, route.method, _path, route.name, route.action)
 					} catch (error) {
 						console.error('Route registering', error)
 					}

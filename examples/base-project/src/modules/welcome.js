@@ -8,6 +8,10 @@ module.exports = ({
             this.render('welcome')
         }
 
+        this.teste = () => {
+            console.log('teste')
+        }
+
         return this
     }
 })
