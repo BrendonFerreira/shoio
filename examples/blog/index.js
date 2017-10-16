@@ -10,7 +10,7 @@ app.up( (port) => {
 } )
 
 // Better debugging
-// process.on('unhandledRejection', err => {
-//   console.log("Caught unhandledRejection");
-//   console.log(err);
-// });
+process.on('unhandledRejection', err => {
+  console.log("Caught unhandledRejection");
+  console.log(err);
+});

@@ -2,12 +2,9 @@ module.exports = ({
   name: 'errors',
   model: {
   },
-  controller() {
-    
-    this.pageNotFound = () => {
+  controller: {
+    pageNotFound() {
       this.render('404')
     }
-
-    return this
   }
 })

@@ -8,6 +8,10 @@ module.exports = [
         path: 'comments'
     },
     {
+        resource: 'users',
+        path: 'user'
+    },
+    {
         path: 'hello',
         method: 'get',
         action: 'hello_world#index'

@@ -2,16 +2,13 @@ module.exports = ({
     name: 'welcome',
     model: {},
     renderer: 'pug',
-    controller() {
-
-        this.index = () => {
+    controller: {
+        index() {
             this.render('welcome')
-        }
+        },
 
-        this.teste = () => {
+        teste() {
             console.log('teste')
         }
-
-        return this
     }
 })

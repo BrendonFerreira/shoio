@@ -9,8 +9,5 @@ module.exports = ({
       belongsTo: 'article',
       belongsTo: 'user',
     }]
-  },
-  controller() {
-    return this
   }
 })
