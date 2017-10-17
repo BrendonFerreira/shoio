@@ -93,7 +93,8 @@ Sendo que no lugar desse retorno do texto pode ser utilizado:
 # Todo
 - [ ] Possibilitar a configuração das rotas para o modulo no proprio modulo
 - [ ] Criar um ORM que possibilite a referencia entre as entidades utilizando has_many, has_one, belongs_to
-  
+- [ ] Possibiliar o registro dos fields
+- [ ] Uma boa forma de validar os campos
 
 
 
