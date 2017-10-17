@@ -1,5 +1,8 @@
 # shoio
 
+## Installing 
+  `npm install --save shoio`
+
 
 ## Basic project
 
@@ -58,8 +61,8 @@ app.routes.register([
 ```
 
 A ação é separada por duas partes:
-  1 - nome do módulo
-  2 - metodo para ser chamado do controller
+  - 1: nome do módulo
+  - 2: metodo para ser chamado do controller
 Sendo essas, juntas pelo '#' formando a propriamente dita, action.
 
 Para essa rota funcionar é necessário existir dentro do controller uma action com o nome `hello_world`:
