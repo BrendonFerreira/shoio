@@ -11,29 +11,31 @@ const shoio = require('shoio')
 const app = shoio()
 
 app.configure({
-  adapter: { mongo: mongoose },
-  viewsPath: './src/views'
+    adapter: { mongo: require('mongoose') },
+    viewsPath: './src/views'
 })
 
 app.routes.register([
-  {
-    resource: 'article',
-    path: 'articles',
-  }
+    {
+        resource: 'article',
+        path: 'articles',
+    }
 ])
 
 app.modules.register({
-  name: 'users',
-  model: {
-    adapter: 'mongo',
-    schema: {
-      name: 'string',
-      birth_day: 'string',
+    name: 'article',
+    model: {
+        adapter: 'mongo',
+        schema: {
+            title: 'string',
+            content: 'string',
+        }
     }
-  }
 })
 
-app.up()
+app.up(function (a) {
+    console.log('Up in port', a)
+})
 ``` 
 
 Ao rodar esse projeto, com esse simples trecho de codigo, será gerado um CRUD disponibilizando rotas para realizar operações, sendo essas que serão mostradas no terminal da seguinte forma:
