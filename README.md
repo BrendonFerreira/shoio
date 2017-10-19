@@ -89,6 +89,72 @@ Instead of this return of the text can be used:
   - Rendering of Pug archives with the function `this.render('page', data)`
   - Total support to JSON return
   - Promises return support, they will be solved behind the cloths, stay calm!
+  
+ 
+# Code organization
+# Starting a project
+
+## Structure
+├── yourproject                   
+│   ├── src          
+│   │   ├── config          
+│   │   │   └── routes.js    
+│   │   ├── modules          
+│   │   │   └── [module_name].js
+│   │   └── views
+│   │       └── [view_name].js 
+│   └── index.js         
+
+
+### yourproject/index.js
+```javascript
+const shoio = require('../../index.js')
+const app = shoio(__dirname)
+const mongoose = require('./lib/mongoose')
+
+app.configure({
+  adapter: {
+    mongo: mongoose
+  }
+})
+
+app.up()
+```
+
+You might be wondering: Where are the modules/routes imports?
+They are automaticaly included! If you put them on the right folders, everything will work perfectly!
+
+## Basic route inside the framework:
+
+### Create a module
+#### yourproject/src/modules/example.js
+```javascript
+module.exports = ({
+	name: 'example',
+    model: {
+        adapter: 'mongo', // It must be the same used on 'yourproject/index.js' configuration
+        schema: {
+            message: 'string',
+        },
+    }
+})
+```
+
+### Set the CRUD ( Create, Read, Update e Delete )
+#### yourproject/src/config/routes.js
+```javascript
+module.exports = [
+    {
+        resource: 'example', 
+        path: '/', // It will be accessed by the root of the environment that you're using. In this case 'localhost:3001/'
+    }
+]
+```
+
+`path: '/'` - It will be accessed by the root of the environment that you're using. In this case 'localhost:3001/'
+`resource: 'example'` - Name of the module you want to generate the CRUD
+
+### Done! You already have available routes on your application!
 
 # Todo
 - [ ] Enable the configuration of routes to the module in the module itself
