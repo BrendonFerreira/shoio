@@ -1,7 +1,7 @@
 {
   "name": "shoio",
-  "version": "0.0.21",
-  "description": "Compreensible Web Framwork",
+  "version": "0.0.22",
+  "description": "An comprehensible Web Framwork",
   "main": "index.js",
   "readme": "README.md",
   "dependencies": {
