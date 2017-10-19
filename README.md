@@ -65,6 +65,7 @@ app.routes.register([
 The action is separated in two parts:
   - 1: module name
   - 2: method called by controller
+  
 Those, together by '#' forming the action.
 
 For this route to work it is necessary an action with the name `hello_world` inside the controller:
