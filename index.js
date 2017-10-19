@@ -259,10 +259,6 @@ module.exports = (base_path) => {
 			return this.getModule(name).controller
 		},
 
-		require(path, requirer) {
-
-		},
-
 		register(config) {
 
 			const asyncRegister = async function (cf) {

@@ -11,8 +11,9 @@ const shoio = require('shoio')
 const app = shoio()
 
 app.configure({
-    adapter: { mongo: require('mongoose') },
-    viewsPath: './src/views'
+    adapter: { 
+        mongo: require('mongoose') 
+    }
 })
 
 app.routes.register([
@@ -33,9 +34,7 @@ app.modules.register({
     }
 })
 
-app.up(function (a) {
-    console.log('Up in port', a)
-})
+app.up()
 ``` 
 
 When running this project, with this simple code snippet, a CRUD will be generated making routes available to perform operations, that operations will be shown in terminal as follows:

@@ -1,6 +1,6 @@
 {
   "name": "shoio",
-  "version": "0.0.21",
+  "version": "0.0.23",
   "description": "Compreensible Web Framwork",
   "main": "index.js",
   "readme": "README.md",
