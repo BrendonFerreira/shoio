@@ -4,19 +4,19 @@ const baseController = {
 		return this.model.find(query).exec()
 	},
 
-	create({ body }){
+	create({ body }) {
 		return this.model.create(body)
 	},
 
-	getById({ params }){
+	getById({ params }) {
 		return this.model.findOne({ _id: params.id }).exec()
 	},
 
-	update({ params, body }){
+	update({ params, body }) {
 		return this.model.update({ _id: params.id }, { $set: body }).exec()
 	},
 
-	delete({ id: _id }, response){
+	delete({ id: _id }, response) {
 		return this.model.delete({ _id })
 	}
 }
@@ -47,7 +47,7 @@ const createRoute = (name, _path) => ({
 	}]
 })
 
-module.exports = () => {
+module.exports = (base_path) => {
 
 	const express = require('express')
 	const bluebird = require('bluebird')
@@ -61,10 +61,25 @@ module.exports = () => {
 			debugRouteSpawn: true,
 			defaultPort: 3001,
 			defaultRenderer: 'pug',
-			viewsPath: 'views',
+			path: {
+				views: 'src/views',
+				modules: 'src/modules',
+				routesFile: 'src/config/routes'
+			}
 		},
 		queue: [],
 		$models: {},
+
+		init(base_path) {
+			const routesPath = path.join(base_path, this.config.path.routesFile)
+			const modulesPath = path.join(base_path, this.config.path.modules)
+			const getRelativePath = (src) => `${base_path}/src/modules/${src}`
+
+			const importedModules = fs.readdirSync(modulesPath).map(getRelativePath).map(require)
+
+			this.routes.register(require(routesPath))
+			this.modules.register(importedModules)
+		},
 
 		getDatabaseAdapter(name) {
 			return this.config.adapter[name || 'sqlite']
@@ -72,12 +87,16 @@ module.exports = () => {
 
 		async listen(port = 3000, callback) {
 
-			await bluebird.all(App.queue)
+			if( base_path ){
+				App.init(base_path)
+			}
 
+			await bluebird.all(App.queue)
+		
 			let server = express()
 
 			server.set('view engine', App.config.defaultRenderer) // Pug está estatico por enquanto
-			server.set('views', App.config.viewsPath)
+			server.set('views', App.config.path.views)
 			server.use(morgan('dev'))
 			server.use(bodyParser.json())
 
@@ -163,13 +182,17 @@ module.exports = () => {
 			if (port instanceof Number) {
 				server.listen(port)
 			} else {
-				server.listen(App.config.defaultPort, () => port(App.config.defaultPort))
+				if (port.call) {
+					server.listen(App.config.defaultPort, () => port(App.config.defaultPort))
+				} else {
+					server.listen(App.config.defaultPort, () => {
+						console.log("Server is up at", App.config.defaultPort)
+					})
+				}
 			}
 
 		}
 	}
-
-
 
 	App.start = App.listen
 	App.up = App.listen
@@ -236,6 +259,10 @@ module.exports = () => {
 			return this.getModule(name).controller
 		},
 
+		require(path, requirer) {
+
+		},
+
 		register(config) {
 
 			const asyncRegister = async function (cf) {
@@ -272,6 +299,7 @@ module.exports = () => {
 	App.configure = function (config) {
 		Object.assign(App.config, config)
 	}
+
 
 	return App
 }

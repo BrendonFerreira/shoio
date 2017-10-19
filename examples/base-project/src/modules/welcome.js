@@ -1,6 +1,5 @@
 module.exports = ({
     name: 'welcome',
-    model: {},
     renderer: 'pug',
     controller: {
         index() {
@@ -8,7 +7,7 @@ module.exports = ({
         },
 
         teste() {
-            console.log('teste')
-        }
+            this.render('welcome')
+        },
     }
 })

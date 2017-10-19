@@ -15,7 +15,7 @@ module.exports = ({
   controller: {
 
     async index() {
-      const articles = JSON.parse(JSON.stringify(await this.model.find().exec()));
+      const articles = (await this.model.find().exec()).map(item => item.toObject());
 
       for (const article of articles) {
         let comments = await this.$models.comment.find({ _id: { $in: article.comments } }).exec()

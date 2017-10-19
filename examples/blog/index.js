@@ -1,16 +1,11 @@
 const shoio = require('../../index.js')
-const app = shoio()
-const fs = require('fs')
+const app = shoio(__dirname)
+const mongoose = require('./lib/mongoose')
 
-app.configure( require('./src/config/app') )
-app.routes.register( require('./src/config/routes') )
-app.modules.register( fs.readdirSync( './src/modules' ).map( src => `./src/modules/${src}` ).map( require ) )
-app.up( (port) => {
-  console.log( 'Server listening for requests in port', port )
-} )
+app.configure({
+  adapter: {
+    mongo: mongoose
+  }
+})
 
-// Better debugging
-process.on('unhandledRejection', err => {
-  console.log("Caught unhandledRejection");
-  console.log(err);
-});
+app.up()
