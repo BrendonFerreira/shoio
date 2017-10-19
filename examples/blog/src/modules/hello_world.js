@@ -1,10 +1,9 @@
 module.exports = ({
-    name: 'hello_world',
-    model: {},
-    renderer: 'pug',
-    controller: {
-        index() {
-            this.render('hello_world')
-        }
-    }
+	name: 'hello_world',
+	renderer: 'pug',
+	controller: {
+		index() {
+			this.render('hello_world')
+		}
+	}
 })

@@ -1,23 +1,25 @@
 {
   "name": "shoio",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.21",
+  "description": "Compreensible Web Framwork",
   "main": "index.js",
+  "readme": "README.md",
   "dependencies": {
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "inherits": "^2.0.3",
-    "json-stringify-safe": "^5.0.1",
     "mongoose": "^4.12.1",
     "morgan": "^1.9.0",
-    "pug": "^2.0.0-rc.4",
-    "waterline": "^0.13.1-6"
+    "pug": "^2.0.0-rc.4"
   },
   "devDependencies": {},
+  "repository": { 
+    "type": "git",
+    "url": "https://github.com/hit-mo/shoio.git"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node index.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Brendon Ferreira de Matos <brendonferreiradm@gmail.com>",
   "license": "MIT"
