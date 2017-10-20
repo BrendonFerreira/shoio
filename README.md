@@ -11,32 +11,33 @@ const shoio = require('shoio')
 const app = shoio()
 
 app.configure({
-  adapter: { mongo: mongoose },
-  viewsPath: './src/views'
+    adapter: { 
+        mongo: require('mongoose') 
+    }
 })
 
 app.routes.register([
-  {
-    resource: 'article',
-    path: 'articles',
-  }
+    {
+        resource: 'article',
+        path: 'articles',
+    }
 ])
 
 app.modules.register({
-  name: 'users',
-  model: {
-    adapter: 'mongo',
-    schema: {
-      name: 'string',
-      birth_day: 'string',
+    name: 'article',
+    model: {
+        adapter: 'mongo',
+        schema: {
+            title: 'string',
+            content: 'string',
+        }
     }
-  }
 })
 
 app.up()
 ``` 
 
-Ao rodar esse projeto, com esse simples trecho de codigo, será gerado um CRUD disponibilizando rotas para realizar operações, sendo essas que serão mostradas no terminal da seguinte forma:
+When running this project, with this simple code snippet, a CRUD will be generated making routes available to perform operations, that operations will be shown in terminal as follows:
 
 ```
 Spawning route: article#list GET /articles/
@@ -46,7 +47,7 @@ Spawning route: article#update PUT /articles/:id
 Spawning route: article#delete DELETE /articles/:id
 ```
 
-## Criando uma rota nesse exemplo
+## Creating a route in this example
 
 ```javascript
 app.routes.register([
@@ -60,12 +61,13 @@ app.routes.register([
 ])
 ```
 
-A ação é separada por duas partes:
-  - 1: nome do módulo
-  - 2: metodo para ser chamado do controller
-Sendo essas, juntas pelo '#' formando a propriamente dita, action.
+The action is separated in two parts:
+  - 1: module name
+  - 2: method called by controller
+  
+Those, together by '#' forming the action.
 
-Para essa rota funcionar é necessário existir dentro do controller uma action com o nome `hello_world`:
+For this route to work it is necessary an action with the name `hello_world` inside the controller:
 
 ```javascript
 
@@ -74,30 +76,90 @@ app.modules.register({
   ...
   controller: {
     hello_world(){
-      return "Olá mundo!!!"
+      return "Hello World!!!"
     }
   }
 })
 
 ```
 
-Pronto! foi criado uma rota em sua aplicação. Ao fazer uma request para o caminho raiz de sua aplicação `http://localhost:3001/` irá ser retornado o texto `Olá mundo!!!`!
+Done! A route has been created in your application. When a request is made to the root path  of your application `http://localhost:3001/` the text `Hello World!!!` will be returned! 
 
-Sendo que no lugar desse retorno do texto pode ser utilizado:
-  - Renderização de arquivos Pug por meio da função `this.render('page', data)`
-  - Total suporte a retorno de JSON
-  - Suporte a retorno de Promises, elas serão resolvidas por traz dos panos, fique tranquilo!
+Instead of this return of the text can be used:
+  - Rendering of Pug archives with the function `this.render('page', data)`
+  - Total support to JSON return
+  - Promises return support, they will be solved behind the cloths, stay calm!
   
+ 
+# Code organization
+# Starting a project
+
+## Structure
+├── yourproject                   
+│   ├── src          
+│   │   ├── config          
+│   │   │   └── routes.js    
+│   │   ├── modules          
+│   │   │   └── [module_name].js
+│   │   └── views
+│   │       └── [view_name].js 
+│   └── index.js         
 
 
-  
+### yourproject/index.js
+```javascript
+const shoio = require('../../index.js')
+const app = shoio(__dirname)
+const mongoose = require('./lib/mongoose')
 
+app.configure({
+  adapter: {
+    mongo: mongoose
+  }
+})
 
+app.up()
+```
 
+You might be wondering: Where are the modules/routes imports?
+They are automaticaly included! If you put them on the right folders, everything will work perfectly!
 
+## Basic route inside the framework:
 
+### Create a module
+#### yourproject/src/modules/example.js
+```javascript
+module.exports = ({
+	name: 'example',
+    model: {
+        adapter: 'mongo', // It must be the same used on 'yourproject/index.js' configuration
+        schema: {
+            message: 'string',
+        },
+    }
+})
+```
 
+### Set the CRUD ( Create, Read, Update e Delete )
+#### yourproject/src/config/routes.js
+```javascript
+module.exports = [
+    {
+        resource: 'example', 
+        path: '/', // It will be accessed by the root of the environment that you're using. In this case 'localhost:3001/'
+    }
+]
+```
 
+`path: '/'` - It will be accessed by the root of the environment that you're using. In this case 'localhost:3001/'
+`resource: 'example'` - Name of the module you want to generate the CRUD
 
+### Done! You already have available routes on your application!
+
+# Todo
+- [ ] Enable the configuration of routes to the module in the module itself
+- [ ] Create an ORM that make reference between entities using has_many, has_one, belongs_to 
+- [ ] Enable register of fields
+- [ ] A nice way to field validation
 
 
