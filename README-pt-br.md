@@ -1,10 +1,10 @@
 # shoio
 
-## Installing 
+## Instalando 
   `npm install --save shoio`
 
 
-## Basic project
+## Projeto básico
 
 ```javascript
 const shoio = require('shoio')
