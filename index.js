@@ -6,6 +6,7 @@ const RequestHandlerFactory = require('./lib/requestHandlerFactory')
 module.exports = (base_path) => {
 
 	const bluebird = require('bluebird')
+	const path = require('path')
 
 	const App = {
 		config: {
@@ -46,6 +47,10 @@ module.exports = (base_path) => {
 			return route.child || route.modules || route.routes || []
 		},
 
+		beforeAction() {
+			console.log( "Não sei como fazer ssamerda" )
+		},
+
 		logRouteSpawn( route ) {
 			console.log('Spawning route:', route.name + '#' +route.action, route.method.toUpperCase(), route.path)
 		},
@@ -84,7 +89,9 @@ module.exports = (base_path) => {
 				const handler = new RequestHandlerFactory({
 					model: $module.model,
 					module: $module,
-					$models: this.$models
+					$models: this.$models,
+					route: route,
+					$options: this.config
 				})
 
 				handler.setAction(action)
@@ -106,7 +113,7 @@ module.exports = (base_path) => {
 			await bluebird.all(App.queue)
 
 			this.webServer.setViewEngine('pug')
-			this.webServer.setViewsPath(App.config.path.views)
+			this.webServer.setViewsPath( path.join( base_path, App.config.path.views) )
 
 			for (let route of this.routes.list) {
 				this.createRouteForAction(route)
@@ -120,7 +127,6 @@ module.exports = (base_path) => {
 	App.start = App.listen
 	App.up = App.listen
 
-	
 
 	const parseRoute = (route) => {
 		const [name, action] = route.action.split('#')
@@ -186,7 +192,7 @@ module.exports = (base_path) => {
 
 		register(config) {
 
-			const asyncRegister = async function (cf) {
+			const asyncRegister = async (cf) => {
 				// console.log( Object.keys(cf.model) )
 				const model =
 					(cf && cf.model && Object.keys(cf.model).length > 0)
@@ -205,7 +211,7 @@ module.exports = (base_path) => {
 
 				this.list.push(_module)
 
-			}.bind(this)
+			}
 
 			if (config instanceof Array) {
 				for (childConfig of config) {
