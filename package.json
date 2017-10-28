@@ -13,13 +13,17 @@
     "morgan": "^1.9.0",
     "pug": "^2.0.0-rc.4"
   },
-  "devDependencies": {},
-  "repository": { 
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-http": "^3.0.0",
+    "mocha": "^4.0.1"
+  },
+  "repository": {
     "type": "git",
     "url": "https://github.com/hit-mo/shoio.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/mocha/bin/mocha tests"
   },
   "author": "Brendon Ferreira de Matos <brendonferreiradm@gmail.com>",
   "license": "MIT"

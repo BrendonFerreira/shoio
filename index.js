@@ -1,66 +1,18 @@
-const baseController = {
-
-	list({ query, pagination }) {
-		return this.model.find(query).exec()
-	},
-
-	create({ body }) {
-		return this.model.create(body)
-	},
-
-	getById({ params }) {
-		return this.model.findOne({ _id: params.id }).exec()
-	},
-
-	update({ params, body }) {
-		return this.model.update({ _id: params.id }, { $set: body }).exec()
-	},
-
-	delete({ id: _id }, response) {
-		return this.model.delete({ _id })
-	}
-}
-
-const createRoute = (name, _path) => ({
-	path: _path,
-	name,
-	modules: [{
-		path: '/',
-		method: 'get',
-		action: 'list',
-	}, {
-		path: '/:id',
-		method: 'get',
-		action: 'getById'
-	}, {
-		path: '/',
-		method: 'post',
-		action: 'create'
-	}, {
-		path: '/:id',
-		method: 'put',
-		action: 'update'
-	}, {
-		path: '/:id',
-		method: 'delete',
-		action: 'delete'
-	}]
-})
+const WebServer = require('./lib/webServer')
+const createDefaultRoutes = require('./lib/createDefaultRoutes')
+const defaultController = require('./lib/defaultController')
+const RequestHandlerFactory = require('./lib/requestHandlerFactory')
 
 module.exports = (base_path) => {
 
-	const express = require('express')
 	const bluebird = require('bluebird')
-	const bodyParser = require('body-parser')
-	const morgan = require('morgan')
-	const path = require('path')
-	const fs = require('fs')
 
 	const App = {
 		config: {
 			debugRouteSpawn: true,
 			defaultPort: 3001,
 			defaultRenderer: 'pug',
+			middlewheres: [],
 			path: {
 				views: 'src/views',
 				modules: 'src/modules',
@@ -70,7 +22,12 @@ module.exports = (base_path) => {
 		queue: [],
 		$models: {},
 
+		webServer: new WebServer(),
+
 		init(base_path) {
+			const fs = require('fs')
+			const path = require('path')
+
 			const routesPath = path.join(base_path, this.config.path.routesFile)
 			const modulesPath = path.join(base_path, this.config.path.modules)
 			const getRelativePath = (src) => `${base_path}/src/modules/${src}`
@@ -85,111 +42,77 @@ module.exports = (base_path) => {
 			return this.config.adapter[name || 'sqlite']
 		},
 
+		getChildRoutes(route) {
+			return route.child || route.modules || route.routes || []
+		},
+
+		logRouteSpawn( route ) {
+			console.log('Spawning route:', route.name + '#' +route.action, route.method.toUpperCase(), route.path)
+		},
+
+		createRouteForAction(route) {
+
+			const path = require('path')
+			const childs = this.getChildRoutes(route)
+
+			if (childs.length > 0) {
+				for (let child of childs) {
+					this.createRouteForAction({
+						path: '/' + path.join(route.path, child.path),
+						name: route.name,
+						method: child.method,
+						action: child.action
+					})
+				}
+			} else {
+				const $module = this.modules.getModule(route.name)
+				let action = null
+
+				if ( $module.controller && $module.controller[route.action]) {
+					action = $module.controller[route.action]
+				} else {
+					if (defaultController[route.action]) {
+						action = defaultController[route.action]
+					}
+				}
+
+				if (!action) {
+					action = () => '\nError:\nUndefined method to action ' + route.action + ' in module: ' + route.name + '\n'
+					console.log(action())
+				}
+
+				const handler = new RequestHandlerFactory({
+					model: $module.model,
+					module: $module,
+					$models: this.$models
+				})
+
+				handler.setAction(action)
+
+				this.logRouteSpawn( route )
+				
+				this.webServer.registerRoute(route.method, route.path, handler.build())
+			}
+
+
+		},
+
 		async listen(port = 3000, callback) {
 
-			if( base_path ){
+			if (base_path) {
 				App.init(base_path)
 			}
 
 			await bluebird.all(App.queue)
-		
-			let server = express()
 
-			server.set('view engine', App.config.defaultRenderer) // Pug está estatico por enquanto
-			server.set('views', App.config.path.views)
-			server.use(morgan('dev'))
-			server.use(bodyParser.json())
+			this.webServer.setViewEngine('pug')
+			this.webServer.setViewsPath(App.config.path.views)
 
 			for (let route of this.routes.list) {
-
-				const registerRoute = (app, method, _path, moduleName, controllerActionName) => {
-
-					if (App.config.debugRouteSpawn)
-						console.log('Spawning route:', moduleName + '#' + controllerActionName, method.toUpperCase(), _path)
-
-					const _module = this.modules.getModule(moduleName)
-
-					const handler = async (request, response, next) => {
-
-						_module.scope.$models = this.$models
-
-						_module.scope.render = (page, data) => {
-							response.render(page, data)
-							response.end()
-						}
-
-						let method;
-
-						if (_module.controller)
-							method = _module.controller[controllerActionName]
-
-						if (!method) {
-							method = baseController[controllerActionName]
-						}
-
-						if (!method) {
-							const message = '\nError:\nUndefined method to action ' + controllerActionName + ' in module: ' + moduleName + '\n'
-							console.log(message)
-							response.send(message)
-							response.end()
-						} else {
-							const methodReturn = method.call(_module.scope, request, response)
-							if (methodReturn) {
-								if (methodReturn instanceof Promise) {
-									response.json(await methodReturn)
-								} else {
-									response.json(methodReturn)
-								}
-								response.end()
-							} else {
-								if (!response.headersSent) {
-									console.log('\nWarning: \nYour controller action', controllerActionName, 'of', moduleName, 'module, are returning null for the view \nMust be returned Promises, JSON object or String\nWith that, the request will be passed to next middlewhere\n');
-									next()
-								} else {
-									// console.log('Headers already sent')
-								}
-							}
-						}
-					}
-					server[method](_path, handler)
-				}
-
-				if (route.modules) {
-					for (let child of route.modules) {
-						const _path = '/' + route.path + child.path;
-						try {
-							registerRoute(server, child.method, _path, route.name, child.action)
-						} catch (error) {
-							console.error('Route registering', error)
-						}
-					}
-				} else {
-					let _path = '/'
-					if (route.path.charAt(0) == '/') {
-						_path = route.path
-					} else {
-						_path = '/' + route.path;
-					}
-
-					try {
-						registerRoute(server, route.method, _path, route.name, route.action)
-					} catch (error) {
-						console.error('Route registering', error)
-					}
-				}
+				this.createRouteForAction(route)
 			}
-
-			if (port instanceof Number) {
-				server.listen(port)
-			} else {
-				if (port.call) {
-					server.listen(App.config.defaultPort, () => port(App.config.defaultPort))
-				} else {
-					server.listen(App.config.defaultPort, () => {
-						console.log("Server is up at", App.config.defaultPort)
-					})
-				}
-			}
+			
+			this.webServer.listen(port)
 
 		}
 	}
@@ -197,11 +120,7 @@ module.exports = (base_path) => {
 	App.start = App.listen
 	App.up = App.listen
 
-	App.defaultRoute = {
-		method: 'get',
-		path: '/',
-		action: 'index'
-	}
+	
 
 	const parseRoute = (route) => {
 		const [name, action] = route.action.split('#')
@@ -213,6 +132,12 @@ module.exports = (base_path) => {
 	}
 
 	App.routes = {
+		
+		defaultRoute : {
+			method: 'get',
+			path: '/',
+			action: 'index'
+		},
 
 		list: [],
 
@@ -222,10 +147,10 @@ module.exports = (base_path) => {
 					this.register(item)
 				}
 			} else if (toRegister.resource && toRegister.path) {
-				this.list.push(createRoute(toRegister.resource, toRegister.path))
+				this.list.push( createDefaultRoutes(toRegister.resource, toRegister.path) )
 			} else {
 				this.list.push({
-					...App.defaultRoute,
+					...this.defaultRoute,
 					...parseRoute(toRegister)
 				})
 			}

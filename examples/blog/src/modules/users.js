@@ -1,5 +1,5 @@
 module.exports = ({
-  name: 'users',
+  name: 'user',
   model: {
     adapter: 'mongo',
     schema: {

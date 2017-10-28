@@ -2,6 +2,7 @@ const shoio = require('../../index.js')
 const app = shoio(__dirname)
 const mongoose = require('./lib/mongoose')
 
+
 app.configure({
   adapter: {
     mongo: mongoose
@@ -9,3 +10,9 @@ app.configure({
 })
 
 app.up()
+
+
+process.on('unhandledRejection', err => {
+  console.log("Caught unhandledRejection");
+  console.log(err);
+});

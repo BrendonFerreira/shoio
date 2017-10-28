@@ -1,25 +1,15 @@
 module.exports = [
     {
+        resource: 'user',
+        path: 'users'
+    },
+    {
         resource: 'article',
         path: 'articles',
     },
     {
         resource: 'comment',
         path: 'comments'
-    },
-    {
-        resource: 'users',
-        path: 'user'
-    },
-    {
-        path: 'hello',
-        method: 'get',
-        action: 'hello_world#index'
-    },
-    {
-        path: '/',
-        method: 'get',
-        action: 'article#index'
     },
     {
         path: '*',

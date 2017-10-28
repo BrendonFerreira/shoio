@@ -1,5 +1,6 @@
-module.exports = ({
+module.exports = {
   name: 'article',
+  requiresAuth: [ 'commentArticle', 'create', 'update' ],
   model: {
     adapter: 'mongo',
     schema: {
@@ -50,4 +51,4 @@ module.exports = ({
     }
 
   }
-})
+}
