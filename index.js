@@ -47,8 +47,8 @@ module.exports = (base_path) => {
 			return route.child || route.modules || route.routes || []
 		},
 
-		beforeAction() {
-			console.log( "Não sei como fazer ssamerda" )
+		beforeAction( middlewhere ) {
+			this.config.middlewheres.push( middlewhere )
 		},
 
 		logRouteSpawn( route ) {
@@ -83,22 +83,34 @@ module.exports = (base_path) => {
 
 				if (!action) {
 					action = () => '\nError:\nUndefined method to action ' + route.action + ' in module: ' + route.name + '\n'
-					console.log(action())
 				}
 
-				const handler = new RequestHandlerFactory({
+				const $scope = {
 					model: $module.model,
 					module: $module,
 					$models: this.$models,
 					route: route,
 					$options: this.config
-				})
+				}
+
+				const handler = new RequestHandlerFactory( $scope )
+				const middlewhereHandler = new RequestHandlerFactory( $scope )
+
+				const middlewheres = this.config.middlewheres
+					.concat( [ $module.beforeAction ] )
+					.filter( ( middlewhere ) => middlewhere )
+					.map( (middlewhere) => {
+						// Building middlewhere handler
+						const middlewhereHandler = new RequestHandlerFactory( $scope )
+						middlewhereHandler.setAction( middlewhere )
+						return middlewhereHandler.build()
+					} )
 
 				handler.setAction(action)
 
 				this.logRouteSpawn( route )
 				
-				this.webServer.registerRoute(route.method, route.path, handler.build())
+				this.webServer.registerRoute(route.method, route.path, handler.build(), middlewheres)
 			}
 
 

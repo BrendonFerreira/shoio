@@ -3,14 +3,7 @@ const app = shoio(__dirname)
 const mongoose = require('./lib/mongoose')
 
 
-app.beforeAction( function( ) {
-  if( this.module.requiresAuth && this.module.requiresAuth.includes( this.route.action ) ) {
-    console.log( 'USER MUST BE LOGGED' )
-  } else {
-    console.log('WATHEVER')
-  }
-  return;
-} )
+app.beforeAction( require('./lib/authentication') )
 
 app.configure({
   adapter: {
@@ -20,8 +13,6 @@ app.configure({
 
 app.up()
 
-
 process.on('unhandledRejection', err => {
-  console.log("Caught unhandledRejection");
   console.log(err);
 });

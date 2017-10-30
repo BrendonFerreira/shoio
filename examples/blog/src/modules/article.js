@@ -13,6 +13,10 @@ module.exports = {
       belongsTo: 'user'
     }]
   },
+  async beforeAction() {
+    console.log( 'Trying to access article! With action: ',this.route.action, this.module.requiresAuth.includes( this.route.action ) )
+    this.next()
+  },
   controller: {
 
     async index() {
