@@ -6,7 +6,6 @@ module.exports = {
     schema: {
       title: 'string',
       content: 'string',
-      comments: ['string']
     },
     relations: [{
       hasMany: 'comment',

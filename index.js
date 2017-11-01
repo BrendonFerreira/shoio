@@ -11,7 +11,8 @@ module.exports = (base_path) => {
 	const App = {
 		config: {
 			debugRouteSpawn: true,
-			defaultPort: 3001,
+			debugRequests: true,
+			defaultPort: 3000,
 			defaultRenderer: 'pug',
 			middlewheres: [],
 			path: {
@@ -28,6 +29,7 @@ module.exports = (base_path) => {
 		init(base_path) {
 			const fs = require('fs')
 			const path = require('path')
+			
 
 			const routesPath = path.join(base_path, this.config.path.routesFile)
 			const modulesPath = path.join(base_path, this.config.path.modules)
@@ -108,30 +110,41 @@ module.exports = (base_path) => {
 
 				handler.setAction(action)
 
-				this.logRouteSpawn( route )
-				
+				this.config.debugRouteSpawn 
+					? this.logRouteSpawn( route )
+					: null
+
 				this.webServer.registerRoute(route.method, route.path, handler.build(), middlewheres)
 			}
 
 
 		},
 
+		down(  ) {
+			this.webServer.close()
+		},
+
 		async listen(port = 3000, callback) {
 
 			if (base_path) {
 				App.init(base_path)
+				this.webServer.setViewsPath( path.join( base_path, App.config.path.views) )
 			}
 
 			await bluebird.all(App.queue)
 
 			this.webServer.setViewEngine('pug')
-			this.webServer.setViewsPath( path.join( base_path, App.config.path.views) )
+
+			if( this.config.debugRequests ){
+				const morgan = require('morgan')
+				this.webServer.use(morgan('dev'))
+			}
 
 			for (let route of this.routes.list) {
 				this.createRouteForAction(route)
 			}
-			
-			this.webServer.listen(port)
+
+			return this.webServer.listen(port)
 
 		}
 	}
@@ -216,7 +229,6 @@ module.exports = (base_path) => {
 					...cf,
 					model
 				}
-
 
 				_module.scope = _module
 				_module.controller = cf.controller
