@@ -7,6 +7,7 @@ module.exports = (base_path) => {
 
 	const bluebird = require('bluebird')
 	const path = require('path')
+	const cors = require('cors')
 
 	const App = {
 		config: {
@@ -68,13 +69,15 @@ module.exports = (base_path) => {
 						path: '/' + path.join(route.path, child.path),
 						name: route.name,
 						method: child.method,
-						action: child.action
+						action: child.action,
+						meta: route.meta || {}
 					})
 				}
 			} else {
 				const $module = this.modules.getModule(route.name)
 				let action = null
 
+				
 				if ( $module.controller && $module.controller[route.action]) {
 					action = $module.controller[route.action]
 				} else {
@@ -92,7 +95,8 @@ module.exports = (base_path) => {
 					module: $module,
 					$models: this.$models,
 					route: route,
-					$options: this.config
+					$options: this.config,
+					meta: route.meta
 				}
 
 				const handler = new RequestHandlerFactory( $scope )
@@ -135,6 +139,8 @@ module.exports = (base_path) => {
 
 			this.webServer.setViewEngine('pug')
 
+			this.webServer.use( cors() )
+
 			if( this.config.debugRequests ){
 				const morgan = require('morgan')
 				this.webServer.use(morgan('dev'))
@@ -159,6 +165,7 @@ module.exports = (base_path) => {
 			...route,
 			action,
 			name,
+			
 		}
 	}
 
@@ -178,7 +185,7 @@ module.exports = (base_path) => {
 					this.register(item)
 				}
 			} else if (toRegister.resource && toRegister.path) {
-				this.list.push( createDefaultRoutes(toRegister.resource, toRegister.path) )
+				this.list.push( createDefaultRoutes( toRegister ) )
 			} else {
 				this.list.push({
 					...this.defaultRoute,
@@ -250,7 +257,6 @@ module.exports = (base_path) => {
 	App.configure = function (config) {
 		Object.assign(App.config, config)
 	}
-
 
 	return App
 }

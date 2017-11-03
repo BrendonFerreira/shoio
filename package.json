@@ -7,6 +7,7 @@
   "dependencies": {
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
     "express": "^4.16.2",
     "inherits": "^2.0.3",
     "mongoose": "^4.12.1",
