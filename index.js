@@ -30,7 +30,7 @@ module.exports = (base_path) => {
 		init(base_path) {
 			const fs = require('fs')
 			const path = require('path')
-			
+
 
 			const routesPath = path.join(base_path, this.config.path.routesFile)
 			const modulesPath = path.join(base_path, this.config.path.modules)
@@ -50,12 +50,12 @@ module.exports = (base_path) => {
 			return route.child || route.modules || route.routes || []
 		},
 
-		beforeAction( middlewhere ) {
-			this.config.middlewheres.push( middlewhere )
+		beforeAction(middlewhere) {
+			this.config.middlewheres.push(middlewhere)
 		},
 
-		logRouteSpawn( route ) {
-			console.log('Spawning route:', route.name + '#' +route.action, route.method.toUpperCase(), route.path)
+		logRouteSpawn(route) {
+			console.log('Spawning route:', route.name + '#' + route.action, route.method.toUpperCase(), route.path)
 		},
 
 		createRouteForAction(route) {
@@ -77,8 +77,11 @@ module.exports = (base_path) => {
 				const $module = this.modules.getModule(route.name)
 				let action = null
 
-				
-				if ( $module.controller && $module.controller[route.action]) {
+				if (!$module) {
+					throw new Error(`Module ${route.name} not found`);
+				}
+
+				if ($module.controller && $module.controller[route.action]) {
 					action = $module.controller[route.action]
 				} else {
 					if (defaultController[route.action]) {
@@ -90,8 +93,11 @@ module.exports = (base_path) => {
 					action = () => '\nError:\nUndefined method to action ' + route.action + ' in module: ' + route.name + '\n'
 				}
 
+				// console.log( $module )
+
 				const $scope = {
 					model: $module.model,
+					collection: $module.model.collection,
 					module: $module,
 					$models: this.$models,
 					route: route,
@@ -99,24 +105,24 @@ module.exports = (base_path) => {
 					meta: route.meta
 				}
 
-				const handler = new RequestHandlerFactory( $scope )
-				const middlewhereHandler = new RequestHandlerFactory( $scope )
+				const handler = new RequestHandlerFactory($scope)
+				const middlewhereHandler = new RequestHandlerFactory($scope)
 
 				const middlewheres = this.config.middlewheres
-					.concat( [ $module.beforeAction ] )
-					.filter( ( middlewhere ) => middlewhere )
-					.map( (middlewhere) => {
+					.concat([$module.beforeAction])
+					.filter((middlewhere) => middlewhere)
+					.map((middlewhere) => {
 						// Building middlewhere handler
-						const middlewhereHandler = new RequestHandlerFactory( $scope )
-						middlewhereHandler.setAction( middlewhere )
+						const middlewhereHandler = new RequestHandlerFactory($scope)
+						middlewhereHandler.setAction(middlewhere)
 						return middlewhereHandler.build()
-					} )
+					})
 
 				handler.setAction(action)
 
-				this.config.debugRouteSpawn 
-					? this.logRouteSpawn( route )
-					: null
+				this.config.debugRouteSpawn ?
+					this.logRouteSpawn(route) :
+					null
 
 				this.webServer.registerRoute(route.method, route.path, handler.build(), middlewheres)
 			}
@@ -124,7 +130,7 @@ module.exports = (base_path) => {
 
 		},
 
-		down(  ) {
+		down() {
 			this.webServer.close()
 		},
 
@@ -132,16 +138,16 @@ module.exports = (base_path) => {
 
 			if (base_path) {
 				App.init(base_path)
-				this.webServer.setViewsPath( path.join( base_path, App.config.path.views) )
+				this.webServer.setViewsPath(path.join(base_path, App.config.path.views))
 			}
 
 			await bluebird.all(App.queue)
 
 			this.webServer.setViewEngine('pug')
 
-			this.webServer.use( cors() )
+			this.webServer.use(cors())
 
-			if( this.config.debugRequests ){
+			if (this.config.debugRequests) {
 				const morgan = require('morgan')
 				this.webServer.use(morgan('dev'))
 			}
@@ -165,13 +171,13 @@ module.exports = (base_path) => {
 			...route,
 			action,
 			name,
-			
+
 		}
 	}
 
 	App.routes = {
-		
-		defaultRoute : {
+
+		defaultRoute: {
 			method: 'get',
 			path: '/',
 			action: 'index'
@@ -185,7 +191,7 @@ module.exports = (base_path) => {
 					this.register(item)
 				}
 			} else if (toRegister.resource && toRegister.path) {
-				this.list.push( createDefaultRoutes( toRegister ) )
+				this.list.push(createDefaultRoutes(toRegister))
 			} else {
 				this.list.push({
 					...this.defaultRoute,
@@ -202,7 +208,16 @@ module.exports = (base_path) => {
 
 	App.createModel = async function (config) {
 		const db = await this.getDatabaseAdapter(config.model.adapter)
-		const model = db.model(config.name, config.model.schema)
+
+		const modelConfig = {
+			schema: config.model.schema,
+			relations: config.model.relations( db )
+		}
+
+		const [ model, collection ] = await db.createModel(config.name, modelConfig)
+		model.collection = collection
+		
+		// console.log( 'Creating module at ', config.name ,Date.now() )
 		this.registerModel(config.name, model)
 		return model
 	}
@@ -221,6 +236,34 @@ module.exports = (base_path) => {
 			}
 			return this.getModule(name).controller
 		},
+
+		// async registerModule(moduleConfig) {
+
+		// 	let model = {}
+
+		// 	if ('model' in moduleConfig) {
+		// 		model = await App.createModel(moduleConfig)
+		// 	}
+
+		// 	moduleConfig['model'] = model[0]
+		// 	moduleConfig['collection'] = model[1]
+		// 	moduleConfig.scope = moduleConfig
+		// 	moduleConfig.controller = moduleConfig.controller || {}
+
+
+		// 	this.list.push(moduleConfig)
+		// },
+
+		// register(config) {
+
+		// 	if (config instanceof Array) {
+		// 		for (childConfig of config) {
+		// 			App.queue.push(this.registerModule(childConfig))
+		// 		}
+		// 	} else {
+		// 		App.queue.push(this.registerModule(config))
+		// 	}
+		// }
 
 		register(config) {
 
@@ -243,6 +286,7 @@ module.exports = (base_path) => {
 				this.list.push(_module)
 
 			}
+
 
 			if (config instanceof Array) {
 				for (childConfig of config) {
