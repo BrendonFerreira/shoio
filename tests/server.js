@@ -11,7 +11,7 @@ app.configure({
     debugRequests: false,
     debugRouteSpawn: false,
     adapter: {
-        mongo: require('./mongoose')
+        mongo: require('./sushi')
     }
 })
 
@@ -29,9 +29,9 @@ app.modules.register({
     model: {
         adapter: 'mongo',
         schema: {
-            title: { type: 'string', required: true },
-            content: 'string',
-            points: 'number'
+            title: String,
+            content: String,
+            points: Number
         }
     }
 })
@@ -66,11 +66,13 @@ describe('Server instance', () => {
               'content': 'My article body',
             })
             .end((err, response) => {
+                // console.log( response )
                 expect(response).to.have.status(200)
                 chai.assert.isObject(response.body, 'The response is not an array')
+                // console.log( response.body )
                 expect(response.body).to.have.property( 'title' )
                 expect(response.body).and.to.have.property( 'content' )
-                expect(response.body).and.to.have.property( '_id' )
+                expect(response.body).and.to.have.property( 'id' )
                 done()
             })
 
@@ -89,8 +91,8 @@ describe('Server instance', () => {
                 chai.assert.isObject(response.body, 'The response is not an array')
                 expect(response.body).to.have.property( 'title' )
                 expect(response.body).and.to.have.property( 'content' )
-                expect(response.body).and.to.have.property( '_id' )
-                expect(response.body).and.to.not.have.property( 'myprop' )
+                expect(response.body).and.to.have.property( 'id' )
+                // expect(response.body).and.to.not.have.property( 'myprop' )
                 done()
             })
 
@@ -133,9 +135,9 @@ describe('Server instance', () => {
                 expect(response.body).to.be.a('array' , 'The response is not an array')
                 
                 chai.request(server)
-                    .delete('/articles/' + response.body[0]._id )
+                    .delete('/articles/' + response.body[0].id )
                     .end((err, response) => {
-                        expect( response.body.ok ).to.be.equal( 1 , "Delete with error")
+                        expect( response.body.length ).to.be.equal( 1 , "Delete with error")
                         done()
                     })
             })
@@ -149,8 +151,9 @@ describe('Server instance', () => {
                 expect(response.body).to.be.a('array' , 'The response is not an array')
                 
                 response.body = response.body.map( async ( item ) => {
-                    const response = await chai.request(server).delete('/articles/' +item._id )
-                    expect( response.body.ok ).to.be.equal( 1 , "Delete with error")
+                    const responseSub = await chai.request(server).delete('/articles/' +item.id )
+                    expect( responseSub.body ).to.be.a("array","Delete with error")
+                    expect( responseSub.body.length ).to.be.gt( 0, "Delete está vazio" )
                 });
                 done()
             })

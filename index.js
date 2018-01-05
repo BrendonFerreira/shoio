@@ -2,6 +2,7 @@ const WebServer = require('./lib/webServer')
 const createDefaultRoutes = require('./lib/createDefaultRoutes')
 const defaultController = require('./lib/defaultController')
 const RequestHandlerFactory = require('./lib/requestHandlerFactory')
+const config = require('./lib/defaultConfig')
 
 module.exports = (base_path) => {
 
@@ -10,18 +11,7 @@ module.exports = (base_path) => {
 	const cors = require('cors')
 
 	const App = {
-		config: {
-			debugRouteSpawn: true,
-			debugRequests: true,
-			defaultPort: 3000,
-			defaultRenderer: 'pug',
-			middlewheres: [],
-			path: {
-				views: 'src/views',
-				modules: 'src/modules',
-				routesFile: 'src/config/routes'
-			}
-		},
+		config,
 		queue: [],
 		$models: {},
 
@@ -207,11 +197,24 @@ module.exports = (base_path) => {
 	}
 
 	App.createModel = async function (config) {
-		const db = await this.getDatabaseAdapter(config.model.adapter)
 
+		const modelAdapter = config.model.adapter || 'sushi'
+
+
+		const db = await this.getDatabaseAdapter(modelAdapter)
+
+		let relations = []
+		if( config.model.relations )  {
+			relations = config.model.relations
+		
+			if ( config.model.relations.call ) {
+				relations = config.model.relations( db )
+			}
+		}
+		
 		const modelConfig = {
 			schema: config.model.schema,
-			relations: config.model.relations( db )
+			relations
 		}
 
 		const [ model, collection ] = await db.createModel(config.name, modelConfig)
