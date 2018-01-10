@@ -9,8 +9,10 @@ module.exports = (base_path) => {
 	const bluebird = require('bluebird')
 	const path = require('path')
 	const cors = require('cors')
+	const events = require('events')
 
-	const App = {
+	const App = {	
+		events: new events.EventEmitter(),
 		config,
 		queue: [],
 		$models: {},
@@ -124,7 +126,7 @@ module.exports = (base_path) => {
 			this.webServer.close()
 		},
 
-		async listen(port = 3000, callback) {
+		async listen(port = 3000) {
 
 			if (base_path) {
 				App.init(base_path)
@@ -146,7 +148,11 @@ module.exports = (base_path) => {
 				this.createRouteForAction(route)
 			}
 
-			return this.webServer.listen(port)
+			return this.webServer.listen(port, (server) => {
+				App.events.emit( 'ready', server )
+			})
+
+			
 
 		}
 	}
@@ -220,8 +226,9 @@ module.exports = (base_path) => {
 		const [ model, collection ] = await db.createModel(config.name, modelConfig)
 		model.collection = collection
 		
-		// console.log( 'Creating module at ', config.name ,Date.now() )
 		this.registerModel(config.name, model)
+		this.registerModel(config.name + 's', collection)
+
 		return model
 	}
 
@@ -239,34 +246,6 @@ module.exports = (base_path) => {
 			}
 			return this.getModule(name).controller
 		},
-
-		// async registerModule(moduleConfig) {
-
-		// 	let model = {}
-
-		// 	if ('model' in moduleConfig) {
-		// 		model = await App.createModel(moduleConfig)
-		// 	}
-
-		// 	moduleConfig['model'] = model[0]
-		// 	moduleConfig['collection'] = model[1]
-		// 	moduleConfig.scope = moduleConfig
-		// 	moduleConfig.controller = moduleConfig.controller || {}
-
-
-		// 	this.list.push(moduleConfig)
-		// },
-
-		// register(config) {
-
-		// 	if (config instanceof Array) {
-		// 		for (childConfig of config) {
-		// 			App.queue.push(this.registerModule(childConfig))
-		// 		}
-		// 	} else {
-		// 		App.queue.push(this.registerModule(config))
-		// 	}
-		// }
 
 		register(config) {
 
@@ -303,6 +282,12 @@ module.exports = (base_path) => {
 
 	App.configure = function (config) {
 		Object.assign(App.config, config)
+	}
+
+	App.plugin = function( installer ) {
+
+		installer( App )
+
 	}
 
 	return App
