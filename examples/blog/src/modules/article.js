@@ -19,7 +19,7 @@ module.exports = {
   controller: {
 
     async index() {
-      const articles = (await this.model.find().exec()).map(item => item.toObject());
+      const articles = (await this.$model.find().exec()).map(item => item.toObject());
 
       for (const article of articles) {
         let comments = await this.$models.comment.find({ _id: { $in: article.comments } }).exec()
@@ -32,7 +32,7 @@ module.exports = {
     },
 
     async getById({ params }) {
-      const found = await this.model.findOne({ _id: params.id })
+      const found = await this.$model.findOne({ _id: params.id })
       const comments = await this.$models.comment.find({ _id: { $in: found.comments } }).exec()
 
       return {
@@ -49,7 +49,7 @@ module.exports = {
 
     // Make this work
     async getCommentsFromArticleId({ params }) {
-      const found = await this.model.findOne({ _id: params.id })
+      const found = await this.$model.findOne({ _id: params.id })
       return this.$models.comment.find({ _id: { $in: found.comments } }).exec()
     }
 
