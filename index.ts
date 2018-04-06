@@ -8,7 +8,7 @@ import * as memory from '../sushi/adapters/memory'
 
 sushi.use( new memory() )
 
-class Model {
+export class Model {
 
     
     model: any;
@@ -33,46 +33,48 @@ class Model {
     }
 }
 
-class Models {
+export class Models {
 
-    registered : Object = {};
+    $models : Object = {};
 
     constructor() {
         return this
     }
 
     registerModel( name: string, model: Model ) {
-
-        this.registered[ name ] = model
-        this.registered[ pluralize(name, 1, false) ] = model.collection
-
+        this.$models[ name ] = model
+        this.$models[ pluralize(name, 1, false) ] = model.collection
     }
 
     async createModel( modelConfig ) {
-    
         const model = await Model.create( modelConfig );
-
         this.registerModel( modelConfig.name, model )
-
         return model
     }
 
 }
 
-class Modules extends Models {
+export class Modules extends Models {
 
-    list = []
-
-    queue = [];
+    $modules = [];
 
     constructor( _config ) {
         super( )
     }
 
-    getModule(name) {
-		return this.list.find(item => item.name == name)
-	}
+    async createModule( _module ) {
+        _module.model = await this.createModel( _module )
+        return _module;
+    }
 
+    registerModule( _module ) {
+        this.$modules.push( _module )
+    }
+
+    getModule(name) {
+		return this.$modules.find(item => item.name == name)
+    }
+    
 	getModuleController(name) {
 		if (!this.getModule(name)) {
 			throw new Error(`Module "${name}" not found, are you sure you've registered?`)
@@ -80,57 +82,151 @@ class Modules extends Models {
 		return this.getModule(name)
 	}
 
-    async createModule( _module ) {
-    
-        _module.model = await this.createModel( _module )
-
-        console.log( _module.name )
-
-        this.registerModule( _module )
-
-        return _module;
-    }
-
-    registerModule( _module ) {
-
-        this.list.push( _module )
-
-    }
-
-
 }
 
-class Shoio extends Modules {
+export default class Shoio extends Modules {
 
     private app;
 
-    constructor( config, ready ) {
-        super(config)
+    //Create config interface
+    config: Object = {};
 
+    onReadyHook: Function = i => 0 ;
+
+    constructor( config, ready? : Function ) {
+        super(config)
+        this.config = config;
         this.app = express()
-        this.loadConfig( config ).then( ready )
+
+        this.loadConfig().then( i => this.ready() )
+
+        if( ready ) {
+            this.onReadyHook = ready
+        }
     }
 
-    async loadConfig( config ){
-        
-        for( let _module of config.modules ) {
-            await this.createModule( _module )
+    ready( fn? : Function ) {
+        if( !fn ) {
+            this.onReadyHook( this )
+        } else {
+            this.onReadyHook = fn
+        }
+    }
+
+    createNestingRoutes( moduleName, routes = [] ) {
+        return routes.map( route => ({
+            ...route,
+            'module': moduleName
+        }) )
+    }
+
+    scaffoldModule( config ) {
+
+        let basepath = config.name
+
+        if( config.scaffold.route ) {
+            basepath = config.scaffold.route
         }
 
-        config.routes.map( route => {
+        const extendConfig = ( base ) => {
+            return ( extend ) => {
+                return {
+                    ...base,
+                    ...extend,
+                    path: basepath + extend.path
+                }
+            }
+        }
+
+        const configure = extendConfig( { module: config.name } )
+
+        const routes = [ 
+            { action: 'list', path: '/', method: 'get' },
+            { action: 'getById', path: '/:id', method: 'get' },
+            { action: 'create', path: '/', method: 'post' },
+            { action: 'update', path: '/:id', method: 'put' },
+            { action: 'delete', path: '/:id', method: 'delete' },
+        ].map( configure )
+
+        const controller = {
+            async list({ query, pagination }) {
+                return await this.$collection.find(query)
+            },
+        
+            async create({ body }) {
+                console.log( body )
+                return await this.$model.create( body )
+            },
+        
+            async getById({ params }) {
+                return await this.$collection.findOne({ id: params.id })
+            },
+        
+            async update({ params, body }) {
+                let model = this.$model( params.id )
+                Object.assign( model, body )
+                return await model.save()
+            },
+        
+            async delete({ params }, response) {
+                return await this.$collection.remove({ id: params.id })
+            }
+        }
+        
+        config.routes = [
+            ...routes,
+            ...config.routes,
+        ]
+
+        config.controller = {
+            ...controller,
+            ...( config.controller || {} )
+        }
+        
+        return config
+
+    }
+
+    async loadModuleConfig( config ) {
+
+        if( config.scaffold ) {
+            config = this.scaffoldModule( config )
+        }
+
+        const routes = this.createNestingRoutes( config.name, config.routes )
+            
+        const _module = await this.createModule( config )
+        
+        this.registerModule( _module )
+
+    }
+
+    async loadConfig(){
+        
+        const routes = this.config.routes || []
+
+        for( let _module of this.config.modules ) {
+            await this.loadModuleConfig( _module )
+        }
+
+        for( const route of routes ) {
             this.registerRoute( route )
-        } )
+        }
+        
+        if( this.config.serve ) {
+            this.serve( this.config.serve )
+        }
 
         return this;
-
     }
 
     registerRoute( route ) {
 
-
         this.app[ route.method ]( route.path, async ( request, response, next ) => {
 
-            response.end( await this.dispatchAction( route, request.params, ...arguments ) )
+            const output = await this.dispatchAction( route, request, ...arguments )
+
+            response.end( output )
 
         } )
 
@@ -140,24 +236,32 @@ class Shoio extends Modules {
 
         const $module = this.getModule( route.module )
 
+        if( !$module ) {
+            console.warn('Module not found or not ready to execute')
+            return
+        }
+
         const $scope = {
             $model: $module.model,
             $collection: $module.model.collection,
             $module: $module,
-            $models: this.registered,
+            $models: this.$models,
             $route: route,
             $meta: route.meta
         }
-
-        return await $module.controller[ route.action ].call( $scope, $scope, ...args )
+        
+        return await $module.controller[ route.action ].call( $scope, ...args )
     }
 
     install( Installer ) {
         Installer( this )
     }
 
-    serve( port: number, callback: Function ) {
+    serve( port: number, callback?: Function ) {
         this.app.listen( port )
+
+        if( !callback ) return
+
         callback( this.app )
     }
 }
@@ -165,52 +269,4 @@ class Shoio extends Modules {
 
 
 
-const app = new Shoio( {
 
-    modules: [ {
-        name: 'post',
-        model: {
-            schema: {
-                title: String,
-            },
-            relations: $ => [
-                $.belongsTo( 'user' ),
-                $.hasMany( 'comments' )
-            ] 
-        },
-        controller: {
-            async index() {
-                return 'hello world'
-            },
-            async all() {
-                return JSON.stringify( await this.$collection.find() )
-            },
-            async create( params ) {
-                await this.$model.create( {
-                    title: 'brendon'
-                } )
-                return 'created!'
-            }
-        }
-
-        // Adicionar a possibilidade de declarar as rotas aqui tmbm, assim nao precisaria colocar o nome module
-        // Before action
-        // After action
-
-    }],
-
-    routes: [
-        { module: 'post', action: 'index', path: '/', method: 'get' },
-        { module: 'post', action: 'all', path: '/all', method: 'get' }
-    ]
-
-}, async i => {
-
-    // OLHA ISSO CARA
-    console.log( await i.dispatchAction( { module: 'post', action: 'all', path: '/', method: 'get' }, {  } ) )
-
-    // app.serve( 8080, function( ...args ) {
-    //     // console.log( ...args )
-    // } )
-
-})
