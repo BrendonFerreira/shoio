@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "lib": [ "es2015" ],
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"],
+            "@root/*": [".*"]
+        }
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "files": [
+        "index.ts"
+    ]
+}
