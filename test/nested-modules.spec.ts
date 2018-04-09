@@ -4,42 +4,52 @@ import { expect } from 'chai'
 
 
 const message = {
+
     name: 'message',
+
     scaffold: true,
+
+    beforeAction() {
+        console.log( 'message' )
+        this.$user = 'test'
+        return this
+    },
+
     model: {
         schema: {
             user: Number,
             content: String
         }
-    },
-    controller: {
-        list( { params, query } ) {
-
-            if( typeof query.user === 'undefined' ) {
-                throw new Error( 'user id is not defined' )
-            }
-
-            return this.$collection.find( { 'user': query.user } )
-        }
     }
+
 }
 
 const user = {
+
     name: 'user',
+
     scaffold: true,
+
     model: {
         schema: {
             name: String
         }
     },
+    
     modules: [
         message
     ]
+
+}
+
+const media = {
+    name: 'media'
 }
 
 const config = {
     modules : [
-        user
+        user,
+        media
     ],
 }
 
@@ -47,8 +57,16 @@ describe( 'Nested modules', function() {
     
     let app;
     
+    const log_modules = (str) => ( _module ) => {
+        console.log( str, _module.$config.name || 'root' )
+        if( _module.$childs ) {
+            _module.$childs.map(log_modules(str+'---'))
+        }
+    }
+
     before( function(done) {
-        app = new Shoio( config, app => {
+        app = new Shoio( config, _app => {
+            log_modules('-')( _app )
             done()
         })
     })

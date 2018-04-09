@@ -10,6 +10,7 @@
     "cors": "^2.8.4",
     "express": "^4.16.3",
     "inherits": "^2.0.3",
+    "lodash.clonedeep": "^4.5.0",
     "mongoose": "^4.12.1",
     "morgan": "^1.9.0",
     "pluralize": "^7.0.0",
@@ -21,14 +22,17 @@
     "@types/node": "^9.6.2",
     "chai": "^4.1.2",
     "chai-http": "^3.0.0",
-    "mocha": "^4.0.1"
+    "i": "^0.3.6",
+    "mocha": "^5.0.5",
+    "ts-mocha": "^1.1.0",
+    "typescript": "^2.8.1"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/hit-mo/shoio.git"
   },
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha tests"
+    "test": "./node_modules/ts-mocha/bin/ts-mocha -p . test/**/*.ts"
   },
   "author": "Brendon Ferreira de Matos <brendonferreiradm@gmail.com>",
   "license": "MIT"

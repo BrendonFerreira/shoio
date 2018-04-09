@@ -4,6 +4,10 @@ import * as sushi from '../sushi'
 import * as memory from '../sushi/adapters/memory'
 import * as bodyParser from 'body-parser'
 
+import * as cloneDeep from 'lodash.clonedeep'
+
+import * as path from 'path'
+
 sushi.use( new memory() )
 
 export class Model {
@@ -62,34 +66,14 @@ class ScaffoldModule {
 
     scaffold() {
 
-        let basepath = this.config.name
-
-        if( this.config.scaffold.route ) {
-            basepath = this.config.scaffold.route
-        }
-
-        const extendConfig = ( base ) => {
-            return ( extend ) => {
-                
-                return {
-                    ...base,
-                    ...extend,
-                    path: basepath + extend.path
-                }
-            }
-        }
-
-        const configure = extendConfig( { module: this.config.name } )
-
         const routes = [ 
             { action: 'list', path: '/', method: 'get' },
             { action: 'getById', path: '/:id', method: 'get' },
             { action: 'create', path: '/', method: 'post' },
             { action: 'update', path: '/:id', method: 'put' },
             { action: 'delete', path: '/:id', method: 'delete' },
-        ].map( configure )
+        ]
 
-    
         const controller = {
             async list({ query, pagination }) {
                 return await this.$collection.find(query)
@@ -161,9 +145,6 @@ export class Modules extends Models {
         }) )
     }
 
-    
-
-
 }
 
 
@@ -173,6 +154,7 @@ interface Route {
     path?: string;
     method?: string;
     meta?: object;
+    $scope?: object;
 }
 
 interface Config {
@@ -180,11 +162,14 @@ interface Config {
     scaffold?: boolean,
     modules?: Array<any>,
     routes?: Array<Route>,
+    route?: any,
     serve?: number,
     parent?: _Module,
     model?,
     controller?,
     collection?,
+    beforeAction?: Function,
+    root?: boolean,
 }
 
 export class _Module extends Models{
@@ -197,6 +182,9 @@ export class _Module extends Models{
     $controller: object = {}
     $childs: Array<_Module> = []
     $routes: Array<Route> = []
+    $root: _Module;
+
+    $beforeAction?: Function; 
 
     constructor( config: Config ) {
         super()
@@ -215,21 +203,26 @@ export class _Module extends Models{
             this.$collection = this.$model.collection
         } 
 
+        if( this.$config.root ){
+            this.$root = this
+        }
+
         if( this.$config.modules ){
-            
             for( const subModule of this.$config.modules ) {
                 await this.loadModule( subModule )
+            }
+        }
+
+        if( this.$config.routes ) {
+            for( const route of this.$config.routes ) {
+                this.registerRoute( route )
             }
         }
 
         this.$parent = this.$config.parent
         this.$controller = this.$config.controller
         this.$routes = this.$config.routes
-
-        if( this.$routes )
-        for( const route of this.$routes ) {
-            this.registerRoute( route )
-        }
+        this.$beforeAction = this.$config.beforeAction
 
         return this
     }
@@ -237,6 +230,8 @@ export class _Module extends Models{
     async loadModule( config ) {
 
         const _module = new _Module( config )
+
+        _module.$root = this.$root 
 
         await _module.setup()
 
@@ -246,29 +241,86 @@ export class _Module extends Models{
     registerModule( _module: _Module ) {
         _module.$parent = this
         this.$childs.push( _module )
-
         this.$router.use( _module.$router )
     }
 
     registerRoute( route: Route ) {
-        this.$router[ route.method ]( "/" + route.path, async ( ...args ) => {
-            const [ request, response ] = args;
-            const outputs = await this.dispatchAction( route, ...args )
 
-            for( const output of outputs ) {  
-                response.send( output )
+        let baseroute = ''
+
+        if( this.$config.route === true ) {
+            baseroute = this.$config.name
+        } else {
+            baseroute = this.$config.route || baseroute
+        }
+
+        const _path = path.join( '/', baseroute, route.path )
+
+        const _route = {
+            'module': this.$config.name,
+            ...route,
+        }
+
+        this.$router[ route.method ]( _path, async ( ...args ) => {
+            
+            const [ request, response ] = args;
+
+            try {
+                // Ele mesmo está escutando a chamada e ele mesmo está respondendo
+                const outputs = await this.$parent.dispatchAction( _route, ...args )
+
+                for( const output of outputs ) {  
+                    response.send( output )
+                }
+
+            } catch(error) {
+
+                response.status(404)
+                response.send( {
+                    messageUser: 'Ops, nada por aqui',
+                    messageDevelop: 'API_NOT_RIGHT',
+                    status: 404
+                } )
+            
             }
             
             response.end()
+
         } )
     }
 
     async dispatchAction( route: Route, ...args ) {
 
+        route = cloneDeep( route )
 
-        // console.log( route.module, this.$ )
+        // Pass nesteds parameter here too
+        let $scope = {
+            ...route.$scope,
+            $module: this,
+            $route: route,
+            $meta: route.meta,
+            $config: this.$config,
+            $parent: this.$parent,
+            $root: this.$root
+        }
 
-        if( this.$config.name !== route.module ) {
+        if( this.$model ) {
+            $scope['$model'] = this.$model
+            $scope['$collection'] = this.$model.collection
+        }
+
+        if( this.$beforeAction ) {
+            $scope['$beforeAction'] = this.$beforeAction 
+        }
+
+        route.$scope = $scope;
+
+        
+        /**
+         * send to childs if have
+         */
+
+        if( !this.$config.name || this.$config.name !== route.module ) {
             let outputs = []
 
             for( const $child of this.$childs ) {
@@ -278,41 +330,17 @@ export class _Module extends Models{
             return outputs
         }
 
-        const $scope = {
-            $module: this,
-            $route: route,
-            $meta: route.meta,
-            // $app: this,
-            $config: this.$config,
-            $parent: this.$parent
+        if( $scope['$beforeAction'] ) {
+            $scope = await $scope['$beforeAction'].call( $scope, ...args )
         }
 
-        if( this.$model ) {
-            $scope['$model'] = this.$model
-            $scope['$collection'] = this.$model.collection
-        }
 
-        return await this.$controller[ route.action ].call( $scope, ...args )
+        const output = await this.$controller[ route.action ].call( $scope, ...args )
+
+        return [ output ]
     }
 
 }
-
-// class Server {
-//     private app : express.;
-
-//     constructor() {
-//         this.app = express()
-//     }
-
-//     registerMiddlewhere( fn: Function ) {
-
-//     }
-
-//     registerRouter( route: Route ) {
-
-//     }
-
-// }
 
 export default class Shoio extends _Module {
 
@@ -323,7 +351,11 @@ export default class Shoio extends _Module {
     constructor( config, ready? ) {
         
         super( config )
+        
         this.config = config
+
+        this.config.root = true
+
         this.app = express()
         
         this.app.use( bodyParser.json() )
@@ -340,7 +372,7 @@ export default class Shoio extends _Module {
 
     setupEnded() {
         this.app.use( this.$router )
-        
+
         if( this.config.serve ) {
             this.serve( this.config.serve )
         }
