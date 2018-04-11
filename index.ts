@@ -1,7 +1,7 @@
 import * as express from 'express'
 import * as pluralize from 'pluralize'
-import * as sushi from '../sushi'
-import * as memory from '../sushi/adapters/memory'
+import * as sushi from 'sushi'
+import * as memory from 'sushi/adapters/memory'
 import * as bodyParser from 'body-parser'
 
 import * as cloneDeep from 'lodash.clonedeep'
