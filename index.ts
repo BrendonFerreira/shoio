@@ -266,8 +266,8 @@ export class _Module extends Models{
             const [ request, response ] = args;
 
             try {
-                // Ele mesmo está escutando a chamada e ele mesmo está respondendo
-                const outputs = await this.$parent.dispatchAction( _route, ...args )
+
+                const outputs = await this.$root.dispatchAction( _route, ...args )
 
                 for( const output of outputs ) {  
                     response.send( output )
@@ -275,13 +275,20 @@ export class _Module extends Models{
 
             } catch(error) {
 
-                response.status(404)
-                response.send( {
-                    messageUser: 'Ops, nada por aqui',
-                    messageDevelop: 'API_NOT_RIGHT',
-                    status: 404
-                } )
-            
+
+                response.status(error.status || 500)
+
+                if( error instanceof Error ){
+                    response.send( {
+                        messageUser: 'Ops, nada por aqui',
+                        messageDevelop: 'API_NOT_RIGHT',
+                        status: 404,
+                        developmentStatus: error
+                    } )
+                    return;
+                } else {
+                    response.send(error)
+                }
             }
             
             response.end()
