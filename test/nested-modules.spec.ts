@@ -1,4 +1,4 @@
-import Shoio from '../../shoio'
+import Shoio from '../index'
 
 import { expect } from 'chai'
 
@@ -10,7 +10,6 @@ const message = {
     scaffold: true,
 
     beforeAction() {
-        console.log( 'message' )
         this.$user = 'test'
         return this
     },
@@ -56,17 +55,9 @@ const config = {
 describe( 'Nested modules', function() {
     
     let app;
-    
-    const log_modules = (str) => ( _module ) => {
-        console.log( str, _module.$config.name || 'root' )
-        if( _module.$childs ) {
-            _module.$childs.map(log_modules(str+'---'))
-        }
-    }
 
     before( function(done) {
         app = new Shoio( config, _app => {
-            log_modules('-')( _app )
             done()
         })
     })
@@ -116,7 +107,7 @@ describe( 'Nested modules', function() {
 
     it( 'find messages to user', async function() {
         
-        const result = await app.dispatchAction( { module: 'message', action: 'list' }, {
+        const [ result ] = await app.dispatchAction( { module: 'message', action: 'list' }, {
             query: {
                 user: 1
             }

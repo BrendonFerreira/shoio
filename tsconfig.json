@@ -8,11 +8,9 @@
         "paths": {
             "@/*": ["./src/*"],
             "@root/*": [".*"]
-        }
+        },
+        "allowSyntheticDefaultImports": true
     },
-    "exclude": [
-        "node_modules"
-    ],
     "files": [
         "index.ts"
     ]
