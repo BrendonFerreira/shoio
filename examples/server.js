@@ -1,40 +1,87 @@
 const Module = require('../index')
 
+const file = {
+    name: 'File',
+
+    router: {
+        base: 'file',
+        expose: [ 'all' ]
+    },
+    
+    model: {
+        schema: _ => ({
+            name: _.STRING,
+            publicUrl: _.STRING,
+        }),
+        relations: _ => [
+            _.belongsTo('Content'),
+        ]
+    },
+
+    methods: {
+        all() {
+            return this.$model.findAll()
+        }
+    }
+}
+
 const content = {
 
     name: 'Content',
 
+    modules: [ file ],
+
     model: {
-        schema: {
-            name: 'string'
-        }
+        schema: _ => ({
+            name: _.STRING
+        }),
+        relations: _ => [
+            _.belongsTo('User'),
+            _.hasOne('File')
+        ]
     },
 
     router: {
         base: 'contents',
-        routes: [
-            { action: 'create', method: 'get' }
-        ]
+        expose: [ 'create', 'list' ]
     },
    
     methods: {
         create(data, context) {
-            return data;
+            return this.$model.create(data);
+        },
+        list(data, context) {
+            return this.$model.findAll(data);
         }
-    },
+    }
 
 };
 
 const user = {
+
     name: 'User',
     
+    modules: [ content ],
+
+    scaffold: true,
+
     router: {
         base: 'users',
+        routes: [
+            { path: 'test', action: 'hello', method: 'get' }
+        ]
     },
 
-    modules: [
-        content
-    ],
+    model: {
+        schema: _ => ({
+            name: _.STRING,
+            email: _.STRING,
+            password: _.STRING
+        }),
+        relations: _ => [
+            _.belongsTo('User')
+        ]
+    },
     
     methods: {
         hello() {
@@ -50,30 +97,18 @@ new Module({
         port: 3000,
         on: {
             initialized: 'test'
-        },
-        routes: [
-            {
-                action: 'ping',
-                path: 'ping'
-            },
-            {
-                action: 'showPayload',
-                path: 'test',
-            }
-        ]
+        }
     },
 
     modules: [
         user
     ],
 
-    methods: {
-        showPayload( data ) {
-            return Object.keys( this.$orm )
-        },
-        ping( data ) {
-            return 'pong';
-        }
-    }
 
-})
+}).init()
+
+
+process.on('unhandledRejection', (reason, p) => {
+    console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+    // application specific logging, throwing an error, or other logic here
+  });
