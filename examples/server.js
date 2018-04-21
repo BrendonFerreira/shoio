@@ -30,6 +30,8 @@ const content = {
     name: 'Content',
 
     modules: [ file ],
+ 
+    scaffold: true,
 
     model: {
         schema: _ => ({
@@ -41,19 +43,7 @@ const content = {
         ]
     },
 
-    router: {
-        base: 'contents',
-        expose: [ 'create', 'list' ]
-    },
    
-    methods: {
-        create(data, context) {
-            return this.$model.create(data);
-        },
-        list(data, context) {
-            return this.$model.findAll(data);
-        }
-    }
 
 };
 
@@ -67,9 +57,6 @@ const user = {
 
     router: {
         base: 'users',
-        routes: [
-            { path: 'test', action: 'hello', method: 'get' }
-        ]
     },
 
     model: {
@@ -81,13 +68,7 @@ const user = {
         relations: _ => [
             _.belongsTo('User')
         ]
-    },
-    
-    methods: {
-        hello() {
-            return 'world'
-        }
-    },
+    }
 };
 
 
