@@ -20,7 +20,7 @@ const file = {
 
     methods: {
         all() {
-            return this.$model.findAll()
+            return this.$model.all()
         }
     }
 }

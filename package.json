@@ -4,9 +4,9 @@
   "description": "An comprehensible Web Framwork",
   "main": "index.js",
   "dependencies": {
-    "sails-disk": "^1.0.1",
-    "sequelize": "^4.37.6",
-    "sqlite3": "^4.0.0",
+    "loopback-connector-firebase": "^0.5.0",
+    "loopback-connector-firestore": "^1.0.5",
+    "loopback-datasource-juggler": "^3.18.1",
     "waterline": "^0.13.3"
   },
   "devDependencies": {
