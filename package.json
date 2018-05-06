@@ -4,17 +4,8 @@
   "description": "An comprehensible Web Framwork",
   "main": "index.js",
   "dependencies": {
-    "loopback-connector-firebase": "^0.5.0",
-    "loopback-connector-firestore": "^1.0.5",
-    "loopback-datasource-juggler": "^3.18.1",
-    "waterline": "^0.13.3"
-  },
-  "devDependencies": {
-    "chai": "^4.1.2",
-    "chai-http": "^3.0.0",
-    "i": "^0.3.6",
-    "mocha": "^5.0.5",
-    "nodemon": "^1.17.3"
+    "express": "^4.16.3",
+    "loopback-datasource-juggler": "^3.18.1"
   },
   "repository": {
     "type": "git",
@@ -26,11 +17,6 @@
     "url": "https://github.com/hit-mo/shoio/issues"
   },
   "homepage": "https://github.com/hit-mo/shoio#readme",
-  "directories": {
-    "example": "examples",
-    "lib": "lib",
-    "test": "test"
-  },
   "scripts": {
     "dev-example": "./node_modules/.bin/nodemon examples/server.js"
   }
