@@ -39,14 +39,14 @@ var Router = require("koa-router");
 var Koa = require("koa");
 var bodyParser = require("koa-bodyparser");
 var cors = require("koa-cors");
-var ShoioHttpServer = /** @class */ (function () {
+var ShoioHttpServer = (function () {
     function ShoioHttpServer(config) {
         this.$options = {};
         this.$options = config;
+        this.$server = new Koa();
     }
     ShoioHttpServer.prototype.startServer = function (sh) {
         var _this = this;
-        this.$server = new Koa();
         var component = (this.$options.entry && sh.getComponent(this.$options.entry)) || sh;
         var router = component.__createRouter();
         if (!router) {
@@ -80,35 +80,22 @@ var ShoioHttpServer = /** @class */ (function () {
         var _this = this;
         shoio.on("created", function (sh) {
             sh.$router = new ShoioHttpServerRouterBuilder(sh);
-            sh.$routerConfigurer =
-                sh.mountRouter || sh[sh.$options.routerConfiguratorName];
+            sh.$routerConfigurer = sh.mountRouter || (sh.$options.routerConfiguratorName && sh[sh.$options.routerConfiguratorName]);
             sh.__createRouter = function () {
-                if (typeof sh.$options.routerPrefix === "undefined") {
-                    sh.$options.routerPrefix = "/";
-                }
-                if (typeof sh.$options.prefix !== "undefined") {
-                    sh.$options.routerPrefix = sh.$options.prefix;
-                }
                 if (!sh.$routerConfigurer) {
                     return;
                 }
-                // Call the configurer
-                var routerConfig = sh.$routerConfigurer.call(sh, sh.$router);
-                if (routerConfig && typeof routerConfig.prefix !== "undefined") {
-                    sh.$routerPrefix = routerConfig.prefix;
+                sh.$routerConfigurer.call(sh, sh.$router, _this.$server);
+                if (typeof sh.$options.routerPrefix === "undefined") {
+                    sh.$routerPrefix = "/";
+                }
+                if (typeof sh.$options.prefix !== "undefined") {
+                    sh.$routerPrefix = sh.$options.prefix;
+                }
+                if (typeof sh.$router.prefix !== "undefined") {
+                    sh.$routerPrefix = sh.$router.prefix;
                 }
                 var routerOut = new Router({ prefix: sh.$routerPrefix });
-                // if( routerConfig ) {
-                //     if (routerConfig.useComponents) {
-                //         for (const componentSignature of routerConfig.useComponents) {
-                //             const component = sh.getComponent(componentSignature, true);
-                //             const router = component.__createRouter();
-                //             if (router) {
-                //                 routerOut.use(router.routes());
-                //             }
-                //         }
-                //     }
-                // }
                 routerOut.use(sh.$router.build().routes());
                 return routerOut;
             };
@@ -117,7 +104,6 @@ var ShoioHttpServer = /** @class */ (function () {
             return;
         }
         shoio.on("mounted", function (sh) {
-            // @ts-ignore
             if (_this.$options.boot) {
                 _this.startServer(sh);
             }
@@ -133,7 +119,7 @@ var defaultParser = function () {
     }
     return args;
 };
-var ShoioHttpServerRouterBuilder = /** @class */ (function () {
+var ShoioHttpServerRouterBuilder = (function () {
     function ShoioHttpServerRouterBuilder(scope) {
         this.__scope = {};
         this.$router = new Router();
@@ -150,7 +136,7 @@ var ShoioHttpServerRouterBuilder = /** @class */ (function () {
                         args = requestParser(ctx, next);
                         if (!action) {
                             ctx.body = "Action not found";
-                            return [2 /*return*/];
+                            return [2];
                         }
                         else if (typeof action === "function") {
                             response = action.call.apply(action, [this.__scope].concat(args, [next]));
@@ -162,13 +148,13 @@ var ShoioHttpServerRouterBuilder = /** @class */ (function () {
                             action = this.__scope[action];
                             response = action.call.apply(action, [this.__scope].concat(args, [next]));
                         }
-                        if (!(response || response instanceof Promise)) return [3 /*break*/, 2];
+                        if (!(response || response instanceof Promise)) return [3, 2];
                         _a = ctx;
-                        return [4 /*yield*/, response];
+                        return [4, response];
                     case 1:
                         _a.body = _b.sent();
                         _b.label = 2;
-                    case 2: return [2 /*return*/];
+                    case 2: return [2];
                 }
             });
         }); };
