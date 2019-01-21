@@ -1,23 +1,31 @@
 {
   "name": "@shoio/server",
-  "version": "0.0.12",
+  "version": "2.0.3",
   "description": "An comprehensible Web Framwork",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "dependencies": {
-    "express": "^4.16.3",
-    "loopback-datasource-juggler": "^3.18.1"
+    "koa": "^2.6.2",
+    "koa-bodyparser": "^4.2.1",
+    "koa-cors": "0.0.16",
+    "koa-router": "^7.4.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hit-mo/shoio.git"
+    "url": "git+https://github.com/shoio/server.git"
   },
   "author": "Brendon Ferreira de Matos <brendonferreiradm@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hit-mo/shoio/issues"
+    "url": "https://github.com/shoio/server/issues"
   },
-  "homepage": "https://github.com/hit-mo/shoio#readme",
+  "homepage": "https://github.com/shoio/server#readme",
   "scripts": {
-    "dev-example": "./node_modules/.bin/nodemon examples/server.js"
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/koa": "^2.0.47",
+    "@types/koa-router": "^7.0.35",
+    "typescript": "^3.2.2"
   }
 }

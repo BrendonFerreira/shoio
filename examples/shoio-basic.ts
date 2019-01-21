@@ -1,14 +1,6 @@
-# Shoio Server
-
-## Installing
-
-  `npm install --save @shoio/core @shoio/server`
-
-## Getting Started
-
-```javascript
 import { Shoio } from "@shoio/core";
-import { ShoioHttpServer } from "@shoio/server";
+import { ShoioHttpServer } from "../lib/index";
+
 
 class PingService extends Shoio {
 
@@ -33,4 +25,3 @@ const app = new PingService({
 })
 
 app.mount()
-```

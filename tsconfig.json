@@ -7,11 +7,12 @@
         "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"],
-            "@root/*": [".*"]
         },
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "outDir": "dist",
+        "declaration": true
     },
     "files": [
-        "index.ts"
+        "lib/index.ts"
     ]
 }
